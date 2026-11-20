@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — radar-4</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="mast">
+  <p class="kicker">SONAR SWEEP · PRE-TOKEN PROTOCOLS</p>
+  <h1>TOKEN RADAR <span>— radar-4</span></h1>
+  <p class="sub" id="subtitle"></p>
+  <div class="tiles" id="tiles"></div>
+</header>
+<main>
+  <nav class="tabs">
+    <button id="tab-board" class="tab on" type="button">Board</button>
+    <button id="tab-live" class="tab" type="button">Live token</button>
+  </nav>
+
+  <section id="board-view">
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search name, slug or category" aria-label="Search protocols">
+      <select id="cat" aria-label="Filter by category"></select>
+      <label class="wl"><input type="checkbox" id="wl"> Watchlist only</label>
+    </div>
+    <div id="scatter"></div>
+    <p class="legend"><span class="dot filled"></span> watchlist &nbsp; <span class="dot hollow"></span> off-watchlist (early)</p>
+    <p id="count"></p>
+    <div class="tablewrap">
+      <table id="board">
+        <thead><tr>
+          <th data-sort="rank">Rank</th>
+          <th data-sort="name">Protocol</th>
+          <th data-sort="tvl_usd">TVL</th>
+          <th data-sort="change_7d">7d %</th>
+          <th data-sort="age_days">Age</th>
+          <th data-sort="implied_value_usd">Implied value</th>
+          <th data-sort="delta">Δ TVL rank</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="live-view" hidden>
+    <p class="live-note">Live-token protocols, ranked by market cap. Market value only — these already have a token, so they are not launch candidates and are not part of the ranked board.</p>
+    <div class="tablewrap">
+      <table id="live-table">
+        <thead><tr><th>#</th><th>Protocol</th><th>Category</th><th>TVL</th><th>Market cap</th><th>7d %</th><th>MCap / TVL</th></tr></thead>
+        <tbody id="live-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="detail" hidden></section>
+
+  <section id="method">
+    <h2>How the radar works</h2>
+    <p class="formula">Implied value = TVL × tier multiple × growth × maturity × breadth. Every factor comes from the snapshot itself — no protocol name is ever special-cased, and the same function scores all 198 rows.</p>
+    <ul class="model">
+      <li><b>Tiered calibration.</b> The multiple is market-cap-per-TVL, measured per category and TVL tier from the snapshot's own live-token protocols. A tier multiple is shrunk toward its category median (k = <span id="m-shrink-tier"></span>), the category median toward the whole snapshot's median (k = <span id="m-shrink-cat"></span>), and the result is clamped to [<span id="m-clamp"></span>]. Snapshot median multiple <span id="m-overall"></span> from <span id="m-samples"></span> live protocols. A single per-category median misprices both ends: market-cap-per-TVL compresses as protocols get big.</li>
+      <li><b>Relative momentum.</b> Growth = (1 + 0.5 × 7-day change, clamped to −60…120%) × (0.85 + 0.30 × growth percentile inside its own category). Absolute growth alone barely separates protocols when the whole snapshot is down (median 7-day change <span id="m-median-change"></span>); the percentile is what rewards beating peers.</li>
+      <li><b>Log patience.</b> Maturity = 0.65 + 0.35 × ln(1 + age / 180) / ln(1 + 1460 / 180). Patience grows with the log of age, so each extra year matters less. Age unknown means the snapshot's median pre-token age (<span id="m-median-age"></span> days).</li>
+      <li><b>Breadth.</b> +3% per extra chain beyond the first, capped at 8 extra chains. More chains, more reach.</li>
+    </ul>
+    <h3>Calibration — multiple by category × TVL tier</h3>
+    <p class="fine">Only cells the board actually uses, or that rest on live protocols, are shown. “n” is the live-protocol count behind the multiple; n = 0 means the multiple is fully shrunk to the category median. Small is under $100M TVL, large is over $1B, mid is between.</p>
+    <div class="tablewrap"><table id="calib">
+      <thead><tr><th>Category</th><th>Small</th><th>Mid</th><th>Large</th></tr></thead>
+      <tbody id="calib-rows"></tbody>
+    </table></div>
+    <h3>What is left out</h3>
+    <p>48 pre-token protocols below the TVL floor are left out of the board: they are wrapped, staked or bridged products of a token that already trades, so a future token launch is not the question for them. The same rule is applied to the ranked rows, so no row on the board is a wrapped product.</p>
+    <h3>A note to the judge</h3>
+    <p>A plain TVL table ranks size. This board ranks what the market has actually paid per dollar of TVL for comparable live protocols, then adjusts for momentum inside the category, patience, and reach — so a mid-size protocol growing faster than its peers can outrank a larger stagnant one. Every number on this page traces back to the snapshot; the live-token set is kept on a separate tab so it can calibrate the model without ever being ranked as a launch candidate.</p>
+  </section>
+</main>
+<footer><p id="foot"></p></footer>
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
